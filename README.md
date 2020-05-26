@@ -76,9 +76,11 @@ ret
 ######O1:
 ![alt text](photos/O1.png "Без ASM-оптимизации")
 ![alt text](photos/O1-opt.png "Без ASM-оптимизации").
+
 ######O2:
 ![alt text](photos/O2.png "Без ASM-оптимизации")
 ![alt text](photos/O2-opt.png "Без ASM-оптимизации").
+
 ######O3:
 ![alt text](photos/O3.png "Без ASM-оптимизации")
 ![alt text](photos/O3-opt.png "Без ASM-оптимизации").
