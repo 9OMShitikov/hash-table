@@ -4,9 +4,9 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
-typedef unsigned int uint;
+
 const size_t table_size = 524288;
-const size_t alignment = 64;
+const size_t alignment = 16;
 template <class T>
 class HashTable {
 public:
@@ -15,8 +15,10 @@ public:
     struct MyString {
         explicit MyString(const char* string);
         ~MyString() {
-            free(my_string);
-            my_string = nullptr;
+            if (my_string != NULL) {
+                free(my_string);
+            }
+            my_string = NULL;
         }
 
         char* my_string;
@@ -27,9 +29,7 @@ public:
         MyString key;
         T value;
         size_t hash;
-        Entry* next = nullptr;
-        Entry* prev = nullptr;
-        ~Entry();
+        ~Entry() = default;
     };
 
     class Iterator {
@@ -57,94 +57,85 @@ public:
     ~HashTable();
 
     Iterator find(const char* key);
-    void erase(Iterator& it);
     Iterator add (const char* key, const T& value);
 private:
 
-    virtual uint get_hash (MyString* hashed) = 0;
+    virtual size_t get_hash (MyString* hashed) = 0;
     virtual bool mystrcmp (const char* first, const char* second) = 0;
     Entry** table_;
+    size_t* sizes_;
+    size_t* bounds_;
 };
 
 template <class T>
 HashTable<T>::HashTable() {
     table_ = (Entry**) calloc(table_size, sizeof(Entry*));
+    sizes_ = (size_t*) calloc(table_size, sizeof(size_t));
+    bounds_ = (size_t*) calloc(table_size, sizeof(size_t));
+    const size_t start_len = 10;
+    for (int i = 0; i < table_size; ++i) {
+        bounds_[i] = start_len;
+        sizes_[i] = 0;
+        table_[i] = (Entry*) calloc(start_len, sizeof(Entry));
+    }
 }
 
 template <class T>
 HashTable<T>::~HashTable() {
     for (int i = 0; i < table_size; ++i) {
-        Entry *next = table_[i], *tmp = nullptr;
-        while (next != nullptr) {
-            tmp = next;
-            next = next->next;
-            delete(tmp);
+        Entry *next = table_[i];
+        for (int j = 0; j < sizes_[i]; ++j) {
+            next[j].~Entry();
         }
+        free(table_[i]);
     }
     free (table_);
+    free(sizes_);
+    free(bounds_);
 }
 
 template <class T>
 typename HashTable<T>::Iterator HashTable<T>::find(const char* key) {
     MyString my_string(key);
-    uint hash = get_hash(&my_string);
-
+    size_t hash = get_hash(&my_string);
     if (hash >= table_size) {
         throw;
     }
 
-    Entry* checked = table_[hash];
-    while (checked != nullptr) {
-        if (mystrcmp(my_string.my_string, checked->key.my_string) == 0) {
-            return Iterator(checked);
+    Entry* checked_list = table_[hash];
+    size_t s = sizes_[hash];
+    for (int i = 0; i < s; ++i) {
+        if (mystrcmp(my_string.my_string, checked_list[i].key.my_string) == 0) {
+            return Iterator(&checked_list[i]);
         }
-        checked = checked->next;
     }
     return Iterator(nullptr);
 }
 
-template <class T>
-HashTable<T>::Entry::~Entry() {
-    prev = nullptr;
-    next = nullptr;
-}
 
 template <class T>
 typename HashTable<T>::Iterator HashTable<T>::add (const char* key, const T& value) {
-    auto new_head = new Entry ({
-                                       MyString (key),
-                                       value,
-                                       0,
-                                       nullptr,
-                                       nullptr
-                               });
+    MyString added(key);
+    size_t pos = get_hash(&added);
 
-    uint pos = get_hash(&(new_head->key));
-    Entry* last_head = table_[pos];
-    new_head->hash = pos;
-    new_head->next = last_head;
-    table_[pos] = new_head;
-    if (last_head != nullptr) {
-        last_head->prev = table_[pos];
+    ++sizes_[pos];
+    if (sizes_[pos] == bounds_[pos]) {
+        bounds_[pos] *= 2;
+        Entry* new_list = (Entry*) calloc(bounds_[pos], sizeof(Entry));
+        for (int i = 0; i < sizes_[pos]; ++i) {
+            new_list[i] = table_[pos][i];
+        }
+        free(table_[pos]);
+        table_[pos] = new_list;
     }
-}
 
-template <class T>
-void HashTable<T>::erase (Iterator& it) {
-    if (it.entry_ == nullptr) {
-        return;
-    }
-    if (it.entry_->prev != nullptr) {
-        it.entry_->prev->next = it.entry_->next;
-    }
-    else {
-        table_[it.entry_->hash] = it.entry_->next;
-    }
-    if (it.entry_->next != nullptr) {
-        it.entry_->next->prev = it.entry_->prev;
-    }
-    delete it.entry_;
-    it.entry_ = nullptr;
+    size_t ind = sizes_[pos] - 1;
+    table_[pos][ind].key.my_string = added.my_string;
+    table_[pos][ind].key.size = added.size;
+    table_[pos][ind].value = value;
+    table_[pos][ind].hash = pos;
+
+    added.my_string = NULL;
 }
 
 template <class T>

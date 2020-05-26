@@ -6,18 +6,18 @@
 #include "../hash_table.h"
 #include <cstring>
 
-extern "C" uint GetHash(void* hashed);
+extern "C" size_t GetHash(void* hashed);
+extern "C" size_t CmpStr(const char* first, const char* second);
 
 template<class T>
 class HashtableWithOptimizations: public HashTable<T> {
     using typename HashTable<T>::MyString;
 private:
-    const size_t hash_expon = 257;
-    uint get_hash (MyString* hashed) {
+    size_t get_hash (MyString* hashed) {
         return GetHash(hashed);
     }
     bool mystrcmp (const char* first, const char* second) {
-        return strcmp(first, second) != 0;
+        return CmpStr(first, second) != 0;
     }
 };
 

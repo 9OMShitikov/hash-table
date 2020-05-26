@@ -32,19 +32,5 @@ TEST (HashTable, Set) {
 
 }
 
-TEST (HashTable, Erase) {
-    HashtableWithoutOptimizations<uint> table;
-
-    ASSERT_TRUE(table.find("test").is_empty());
-    table.add("test", 265);
-
-    auto it = table.find("test");
-    ASSERT_FALSE(it.is_empty());
-    ASSERT_EQ(it.get_value(), 265);
-
-    table.erase(it);
-    ASSERT_TRUE(table.find("test").is_empty());
-}
-
 
 
