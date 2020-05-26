@@ -6,7 +6,7 @@ template<class T>
 class HashtableWithoutOptimizations: public HashTable<T> {
 using typename HashTable<T>::MyString;
 private:
-    const uint Crc32Table[256] = {
+    const size_t Crc32Table[256] = {
             0x00000000, 0x77073096, 0xEE0E612C, 0x990951BA,
             0x076DC419, 0x706AF48F, 0xE963A535, 0x9E6495A3,
             0x0EDB8832, 0x79DCB8A4, 0xE0D5E91E, 0x97D2D988,
@@ -73,7 +73,7 @@ private:
             0xB40BBE37, 0xC30C8EA1, 0x5A05DF1B, 0x2D02EF8D
     };
 
-    uint get_hash (MyString* hashed) {
+    size_t get_hash (MyString* hashed) {
         const char* str = hashed->my_string;
         uint crc = 0xFFFFFFFF;
         for (int i = hashed->size; i > 0; --i) {
